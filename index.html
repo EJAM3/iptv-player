@@ -301,14 +301,33 @@ function parseM3U(content) {
 async function loadM3UFromUrl(url) {
   try {
     document.getElementById('channelList').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)"><div class="spinner" style="margin:0 auto 12px"></div>Descargando lista...</div>';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
+    let text = null;
+    // Intentar fetch directo primero
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      text = await res.text();
+    } catch(directErr) {
+      // Si falla (probablemente CORS), intentar con proxy
+      console.log('Fetch directo fall\u00f3, intentando con proxy CORS...', directErr.message);
+      document.getElementById('channelList').innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)"><div class="spinner" style="margin:0 auto 12px"></div>Reintentando con proxy CORS...</div>';
+      const proxyUrls = [
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+        'https://corsproxy.io/?' + encodeURIComponent(url)
+      ];
+      for (const proxyUrl of proxyUrls) {
+        try {
+          const res2 = await fetch(proxyUrl);
+          if (res2.ok) { text = await res2.text(); break; }
+        } catch(proxyErr) { continue; }
+      }
+      if (!text) throw new Error('No se pudo descargar la lista. El servidor bloquea las peticiones (CORS). Intenta descargar el archivo manualmente y c\u00e1rgalo como archivo local.');
+    }
     channels = parseM3U(text);
     localStorage.setItem(LIST_KEY, url);
     onListLoaded();
   } catch(e) {
-    document.getElementById('channelList').innerHTML = '<div style="padding:40px;text-align:center;color:#f87171"><p>\u26a0\ufe0f Error al cargar la lista</p><p style="font-size:12px;margin-top:8px;color:var(--text2)">' + e.message + '</p><p style="font-size:11px;margin-top:12px;color:var(--text2)">Usa el bot\u00f3n "Cargar Lista" para intentar con otra URL o archivo.</p></div>';
+    document.getElementById('channelList').innerHTML = '<div style="padding:40px;text-align:center;color:#f87171"><p>\u26a0\ufe0f Error al cargar la lista</p><p style="font-size:12px;margin-top:8px;color:var(--text2)">' + e.message + '</p><p style="font-size:11px;margin-top:12px;color:var(--text2)">Usa el bot\u00f3n "Cargar Lista" para intentar con otra URL o archivo local.</p></div>';
   }
 }
 
