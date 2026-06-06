@@ -332,9 +332,13 @@ async function loadM3UFromUrl(url) {
 }
 
 function onListLoaded() {
-  document.getElementById('totalCount').textContent = channels.length;
-  document.getElementById('channelCountLabel').textContent = channels.length + ' canales';
+  // buildGroups first since it recreates elements with IDs like totalCount, favCount
   buildGroups();
+  // Now safely update counts (elements exist after buildGroups)
+  const totalEl = document.getElementById('totalCount');
+  if (totalEl) totalEl.textContent = channels.length;
+  const countLabel = document.getElementById('channelCountLabel');
+  if (countLabel) countLabel.textContent = channels.length + ' canales';
   filterChannels();
   // Restore last channel
   try {
@@ -365,7 +369,8 @@ function selectGroup(g) {
   showFavorites = false;
   buildGroups();
   filterChannels();
-  document.getElementById('panelTitle').textContent = g || 'Todos los canales';
+  const pt = document.getElementById('panelTitle');
+  if (pt) pt.textContent = g || 'Todos los canales';
   closeSidebar();
 }
 
@@ -374,7 +379,8 @@ function toggleFavorites() {
   if(showFavorites) selectedGroup = null;
   buildGroups();
   filterChannels();
-  document.getElementById('panelTitle').textContent = showFavorites ? '\u2764\ufe0f Favoritos' : 'Todos los canales';
+  const pt = document.getElementById('panelTitle');
+  if (pt) pt.textContent = showFavorites ? '\u2764\ufe0f Favoritos' : 'Todos los canales';
   closeSidebar();
 }
 
@@ -403,7 +409,8 @@ function filterChannels() {
 
 function renderChannels() {
   const list = document.getElementById('channelList');
-  document.getElementById('panelSubtitle').textContent = filtered.length + ' resultados';
+  const subtitle = document.getElementById('panelSubtitle');
+  if (subtitle) subtitle.textContent = filtered.length + ' resultados';
   if (filtered.length === 0) {
     list.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text2)">Sin canales para mostrar</div>';
     return;
@@ -519,6 +526,8 @@ function saveFavorites() {
 function updateFavCount() {
   const el = document.getElementById('favCount');
   if (el) el.textContent = favorites.size;
+  const totalEl = document.getElementById('totalCount');
+  if (totalEl && channels.length > 0) totalEl.textContent = channels.length;
 }
 
 function updatePlayerFavBtn() {
